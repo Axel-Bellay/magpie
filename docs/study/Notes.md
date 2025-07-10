@@ -194,10 +194,78 @@ The setup method for example, is part of the `BasicAlgorithm` object's build pro
 `Protocol` object calling a function in the setup.py file.
 
 The *hook* methods in that class are pretty confusing. When starting my study I thought those where supposed to run the
-search algorithm, turns out they are just logging and printing the report datas. I suggest moving them into their own
+search algorithm, turns out they are just logging, checking for errors and printing the report datas. I suggest moving them into their own
 separate class and document it to make their purpose more clear, and the `BasicAlgorithm` code easier to understand.
 
 <img src="img/hook_class.drawio.png"/>
+
+The main problem with this refactor is that some of the currently implemented search algorithm override the hook methods present in `BasicSoftware`. A simple solution to this, however, is to create an inner class that would inherit the basic `Hook` class(we could even rename it `BasicHook`), and give the search algorithm an object of this class instead. As an example, here is what the code of `ValidSearch` would look like :
+
+```python
+class ValidSearch(LocalSearch):
+
+   class ValidSearchHook(BasicHook):
+
+      def __init__():
+         super.init()
+
+      def hook_warmup(self, algo):
+         super().hook_warmup()
+         if algo.debug_patch is None:
+               raise RuntimeError
+
+      def hook_start(self, algo):
+         super().hook_start()
+         algo.report['best_fitness'] = None
+         algo.report['best_patch'] = self.debug_patch
+
+      def hook_evaluation(self, algo, variant, run, accept=False, best=False):
+         # accept
+         accept = best = False
+         if run.status == 'SUCCESS':
+               best = algo.dominates(run.fitness, algo.report['best_fitness']) or (run.fitness == algo.report['best_fitness'] and len(variant.patch.edits) < len(algo.report['best_patch'].edits))
+               accept = best or run.fitness == algo.report['best_fitness']
+               if best:
+                  algo.report['best_fitness'] = run.fitness
+                  algo.report['best_patch'] = variant.patch
+
+         super().hook_evaluation(variant, run, accept, best)
+
+        # next
+        self.stats['steps'] += 1
+
+    def __init__(self):
+         super().__init__()
+         self.debug_patch = None
+         self.hook = ValidSearchHook()
+
+
+    def do_cleanup(self, variant):
+         cleaned = copy.deepcopy(variant)
+         for k in reversed(range(len(variant.patch.edits))):
+            patch = copy.deepcopy(cleaned.patch)
+            del patch.edits[k]
+            tmp = magpie.core.Variant(self.software, patch)
+            if tmp.diff == variant.diff:
+                self.software.logger.info('removed %s', cleaned.patch.edits[k])
+                cleaned = tmp
+         s1, s2 = len(cleaned.patch.edits), len(variant.patch.edits)
+         if s1 < s2:
+            self.software.logger.info('cleaned size is %d (was %d)', s1, s2)
+            self.software.logger.info('clean patch: %s', cleaned.patch)
+         return cleaned
+```
+
+Another challenge of this refactor is that the hook operations need access to the search algorithm's data to work. As you can see up here, I solved this by making the hook methods take a search algorithm as argument, turning the class into a **visitor-like utility**. This makes for more decoupling, but will introduce more verbose, as the method call in the algo will now require it to pass itself : 
+```python 
+#from
+self.hook_wramup()
+
+#to
+self.hook.warmup(self)
+```
+
+This change will definitely make the code a bit more laborious to write, however it will make it a lot clearer and easier to understand.
 
 ### Misc
 
@@ -214,8 +282,8 @@ separate class and document it to make their purpose more clear, and the `BasicA
  - I noticed some occurrences of dead variables in the code, most notably in the `BasicAlgorithm` class(signaled by comments). 
     Variables and dict values are assigned, then re-assigned later without being used once. These make the code 
     more confusing and induce errors.
- - The `evaluate_variant(software, variant)` is duplicated in the `BasicAlgorithm` class and the `Basic_Software` class.
-    software variants already have a reference to their original software, thus contain all the necessary data to e
+ - The `evaluate_variant(software, variant)` is duplicated in the `BasicAlgorithm` class and     the `Basic_Software` class.
+    software variants already have a reference to their original software, thus contain all the necessary data to execute this method properly. Rather than Have two instance of this method scatered in two classes, why not just have one, inside the that makes the most sense?
 
 
 ***
