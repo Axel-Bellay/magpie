@@ -2,10 +2,10 @@ import pathlib
 
 import magpie.utils
 
-from .abstract_model import AbstractLineModel
+from ..abstract_rid_model import AbstractRIDModel
 
 
-class LineModel(AbstractLineModel):
+class LineModel(AbstractRIDModel):
     def init_contents(self):
         with pathlib.Path(self.filename).open('r') as target_file:
             lines = list(map(str.rstrip, target_file.readlines()))

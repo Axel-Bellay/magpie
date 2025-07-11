@@ -175,6 +175,7 @@ class RandomWalk(LocalSearch):
         run = self.evaluate_variant(variant)
         accept = self.config['accept_fail']
         best = False
+        #Is thi not hook logic?
         if run.status == 'SUCCESS':
             accept = True
             if self.dominates(run.fitness, self.report['best_fitness']):
@@ -209,6 +210,7 @@ class FirstImprovement(LocalSearch):
 
     def explore(self, current_patch, current_fitness):
         # move
+        #ew...
         while True:
             patch = copy.deepcopy(current_patch)
             self.mutate(patch)

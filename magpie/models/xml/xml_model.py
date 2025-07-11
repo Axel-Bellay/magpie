@@ -5,10 +5,10 @@ from xml.etree import ElementTree
 
 import magpie.utils
 
-from .abstract_model import AbstractXmlModel
+from ..abstract_rid_model import AbstractRIDModel
 
 
-class XmlModel(AbstractXmlModel):
+class XmlModel(AbstractRIDModel):
     def __init__(self, filename):
         super().__init__(filename)
         self.config = {

@@ -34,6 +34,7 @@ class AbstractAlgorithm(abc.ABC):
     def run(self):
         pass
 
+    #Pics a random edit subclass and creates an edit object of chosen class.
     def create_edit(self, variant=None):
         ref = variant or self.software.noop_variant
         klass = random.choice(self.config['possible_edits'])

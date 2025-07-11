@@ -4,9 +4,10 @@ import pathlib
 
 import magpie.core
 import magpie.utils
+from magpie.models.abstract_rid_model import AbstractRIDModel
 
 
-class AstorModel(magpie.core.BasicModel):
+class AstorModel(AbstractRIDModel):
     def init_contents(self):
         with pathlib.Path(self.filename).open('r') as target_file:
             self.contents = ast.parse(target_file.read()+'\n')

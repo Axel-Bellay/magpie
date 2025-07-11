@@ -1,13 +1,13 @@
 import magpie.utils
 from magpie.core import AbstractEdit
 
-from .abstract_model import AbstractLineModel
+from ..abstract_rid_model import AbstractRIDModel
 
 
 class LineDeletionEdit(AbstractEdit):
     @classmethod
     def auto_create(cls, ref):
-        target = ref.random_model(AbstractLineModel).random_target('line')
+        target = ref.random_model(AbstractRIDModel).random_target('line')
         if not target:
             return None
         return cls(target)
@@ -21,7 +21,7 @@ magpie.utils.known_edits.append(LineDeletionEdit)
 class LineReplacementEdit(AbstractEdit):
     @classmethod
     def auto_create(cls, ref):
-        target, ingredient = ref.random_targets(AbstractLineModel, 'line', 'line')
+        target, ingredient = ref.random_targets(AbstractRIDModel, 'line', 'line')
         if not (target and ingredient):
             return None
         return cls(target, ingredient)
@@ -37,7 +37,7 @@ magpie.utils.known_edits.append(LineReplacementEdit)
 class LineInsertionEdit(AbstractEdit):
     @classmethod
     def auto_create(cls, ref):
-        target, ingredient = ref.random_targets(AbstractLineModel, '_inter_line', 'line')
+        target, ingredient = ref.random_targets(AbstractRIDModel, '_inter_line', 'line')
         if not (target and ingredient):
             return None
         return cls(target, ingredient)

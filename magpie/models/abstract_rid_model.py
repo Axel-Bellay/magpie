@@ -3,7 +3,7 @@ import abc
 from magpie.core import BasicModel
 
 
-class AbstractLineModel(BasicModel):
+class AbstractRIDModel(BasicModel):
     @abc.abstractmethod
     def do_replace(self, ref_model, target_dest, target_orig):
         pass
