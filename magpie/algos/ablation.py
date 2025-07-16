@@ -61,4 +61,4 @@ class AblationAnalysis(ValidSearch):
         self.report['stop'] = 'ablation end'
         return self.report['best_patch'], self.report['best_fitness']
 
-magpie.utils.known_algos.append(AblationAnalysis)
+magpie.utils.known_algos['ablation_analysis'] = [AblationAnalysis]

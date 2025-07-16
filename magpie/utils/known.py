@@ -4,4 +4,4 @@ edits = []
 fitness = []
 software = []
 protocols = []
-algos = []
+algos = {}

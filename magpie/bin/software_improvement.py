@@ -1,21 +1,23 @@
-import argparse
 import configparser
+import argparse
 import pathlib
+import sys
+import functools
 
 import magpie
 
-# ================================================================================
-# Main function
-# ================================================================================
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Magpie genetic programming')
+    print("Bienvenue dans software_improvement.py")
+
+    search_type = sys.argv[1]
+    parser = argparse.ArgumentParser(description=f'Magpie {search_type}')
+    sys.argv = sys.argv[1:]
+
     parser.add_argument('--scenario', type=pathlib.Path, required=True)
     parser.add_argument('--algo', type=str)
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 
-    # read scenario file
     config = configparser.ConfigParser()
     config.read_dict(magpie.core.default_scenario)
     config.read(args.scenario)
@@ -23,15 +25,14 @@ if __name__ == '__main__':
 
     # select GP algorithm
     if args.algo is not None:
-        config['search']['algorithm'] = args.algo
-    if config['search']['algorithm']:
-        algo = magpie.utils.algo_from_string(config['search']['algorithm'])
-        if not issubclass(algo, magpie.algos.GeneticProgramming):
+        algo = magpie.utils.algo_from_string(args.algo)
+        if not magpie.utils.known_algos[search_type].contains(algo) : # Critical point for refactoring
             msg = f'Invalid genetic programming algorithm "{algo.__name__}"'
             raise RuntimeError(msg)
+        config['search']['algorithm'] = args.algo
     else:
-        config['search']['algorithm'] = 'GeneticProgrammingUniformConcat'
-        algo = magpie.algos.GeneticProgrammingUniformConcat
+        algo = magpie.utils.known_algos[search_type][0]
+        config['search']['algorithm'] = algo.__name__
 
     # setup protocol
     magpie.core.setup(config)

@@ -51,6 +51,23 @@ class ValidSearch(LocalSearch):
             self.software.logger.info('clean patch: %s', cleaned.patch)
         return cleaned
 
+magpie.utils.known_algos['revalidate_patch'] = []
+
+class ValidTest(ValidSearch):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Validation Full'
+
+    def explore(self, current_patch, current_fitness):
+        # full patch only
+        variant = magpie.core.Variant(self.software, current_patch)
+        run = self.evaluate_variant(variant)
+        self.hook_evaluation(variant, run)
+
+        self.report['stop'] = 'validation end'
+        return self.report['best_patch'], self.report['best_fitness']
+
+magpie.utils.known_algos['revalidate_patch'].append(ValidTest)
 
 class ValidSingle(ValidSearch):
     def __init__(self):
@@ -68,24 +85,7 @@ class ValidSingle(ValidSearch):
         self.report['stop'] = 'validation end'
         return self.report['best_patch'], self.report['best_fitness']
 
-magpie.utils.known_algos.append(ValidSingle)
-
-
-class ValidTest(ValidSearch):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Validation Full'
-
-    def explore(self, current_patch, current_fitness):
-        # full patch only
-        variant = magpie.core.Variant(self.software, current_patch)
-        run = self.evaluate_variant(variant)
-        self.hook_evaluation(variant, run)
-
-        self.report['stop'] = 'validation end'
-        return self.report['best_patch'], self.report['best_fitness']
-
-magpie.utils.known_algos.append(ValidTest)
+magpie.utils.known_algos['revalidate_patch'].append(ValidSingle)
 
 
 class ValidMinify(ValidSearch):
@@ -189,4 +189,4 @@ class ValidMinify(ValidSearch):
         self.report['stop'] = 'validation end'
         return self.report['best_patch'], self.report['best_fitness']
 
-magpie.utils.known_algos.append(ValidMinify)
+magpie.utils.known_algos['minify_patch'] = [ValidMinify]

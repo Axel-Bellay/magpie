@@ -5,7 +5,6 @@ from .abstract_model import AbstractModel
 from .abstract_software import AbstractSoftware
 from .basic_algorithm import BasicAlgorithm
 from .basic_fitness import BasicFitness
-from .basic_model import BasicModel
 from .basic_protocol import BasicProtocol
 from .basic_software import BasicSoftware
 from .errors import ScenarioError

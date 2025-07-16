@@ -181,60 +181,7 @@ class GeneticProgramming(magpie.core.BasicAlgorithm):
                 random.shuffle(a)
             self.hook_reset_batch()
 
-
-class GeneticProgrammingConcat(GeneticProgramming):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Genetic Programming (Concat)'
-
-    def crossover(self, sol1, sol2):
-        c = copy.deepcopy(sol1)
-        for edit in sol2.edits:
-            c.edits.append(edit)
-        return c
-
-magpie.utils.known_algos.append(GeneticProgrammingConcat)
-
-
-class GeneticProgramming1Point(GeneticProgramming):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Genetic Programming (1-point)'
-
-    def crossover(self, sol1, sol2):
-        c = magpie.core.Patch()
-        k1 = random.randint(0, len(sol1.edits))
-        k2 = random.randint(0, len(sol2.edits))
-        for edit in sol1.edits[:k1]:
-            c.edits.append(edit)
-        for edit in sol2.edits[k2:]:
-            c.edits.append(edit)
-        return c
-
-magpie.utils.known_algos.append(GeneticProgramming1Point)
-
-
-class GeneticProgramming2Point(GeneticProgramming):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Genetic Programming (2-point)'
-
-    def crossover(self, sol1, sol2):
-        c = magpie.core.Patch()
-        k1 = random.randint(0, len(sol1.edits))
-        k2 = random.randint(0, len(sol1.edits))
-        k3 = random.randint(0, len(sol2.edits))
-        k4 = random.randint(0, len(sol2.edits))
-        for edit in sol1.edits[:min(k1, k2)]:
-            c.edits.append(edit)
-        for edit in sol2.edits[min(k3, k4):max(k3, k4)]:
-            c.edits.append(edit)
-        for edit in sol1.edits[max(k1, k2):]:
-            c.edits.append(edit)
-        return c
-
-magpie.utils.known_algos.append(GeneticProgramming2Point)
-
+magpie.utils.known_algos['genetic_programming'] = []
 
 class GeneticProgrammingUniformConcat(GeneticProgramming):
     def __init__(self):
@@ -258,7 +205,60 @@ class GeneticProgrammingUniformConcat(GeneticProgramming):
                 c.edits.append(random.choice(sol4.edits))
         return c
 
-magpie.utils.known_algos.append(GeneticProgrammingUniformConcat)
+magpie.utils.known_algos['genetic_programming'].append(GeneticProgrammingUniformConcat)
+
+class GeneticProgrammingConcat(GeneticProgramming):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Genetic Programming (Concat)'
+
+    def crossover(self, sol1, sol2):
+        c = copy.deepcopy(sol1)
+        for edit in sol2.edits:
+            c.edits.append(edit)
+        return c
+
+magpie.utils.known_algos['genetic_programming'].append(GeneticProgrammingConcat())
+
+
+class GeneticProgramming1Point(GeneticProgramming):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Genetic Programming (1-point)'
+
+    def crossover(self, sol1, sol2):
+        c = magpie.core.Patch()
+        k1 = random.randint(0, len(sol1.edits))
+        k2 = random.randint(0, len(sol2.edits))
+        for edit in sol1.edits[:k1]:
+            c.edits.append(edit)
+        for edit in sol2.edits[k2:]:
+            c.edits.append(edit)
+        return c
+
+magpie.utils.known_algos['genetic_programming'].append(GeneticProgramming1Point)
+
+
+class GeneticProgramming2Point(GeneticProgramming):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Genetic Programming (2-point)'
+
+    def crossover(self, sol1, sol2):
+        c = magpie.core.Patch()
+        k1 = random.randint(0, len(sol1.edits))
+        k2 = random.randint(0, len(sol1.edits))
+        k3 = random.randint(0, len(sol2.edits))
+        k4 = random.randint(0, len(sol2.edits))
+        for edit in sol1.edits[:min(k1, k2)]:
+            c.edits.append(edit)
+        for edit in sol2.edits[min(k3, k4):max(k3, k4)]:
+            c.edits.append(edit)
+        for edit in sol1.edits[max(k1, k2):]:
+            c.edits.append(edit)
+        return c
+
+magpie.utils.known_algos['genetic_programming'].append(GeneticProgramming2Point)
 
 
 class GeneticProgrammingUniformInter(GeneticProgramming):
@@ -283,4 +283,4 @@ class GeneticProgrammingUniformInter(GeneticProgramming):
                 c.edits.append(random.choice(sol4.edits))
         return c
 
-magpie.utils.known_algos.append(GeneticProgrammingUniformInter)
+magpie.utils.known_algos['local_search'].append(GeneticProgrammingUniformInter)

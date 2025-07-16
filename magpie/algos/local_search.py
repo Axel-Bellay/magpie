@@ -77,130 +77,7 @@ class LocalSearch(magpie.core.BasicAlgorithm):
             self.report['stop'] = 'trapped'
         # TODO: restart, others?
 
-
-class DummySearch(LocalSearch):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Dummy Search'
-
-    def explore(self, current_patch, current_fitness):
-        self.report['stop'] = 'dummy end'
-        return current_patch, current_fitness
-
-magpie.utils.known_algos.append(DummySearch)
-
-
-class DebugSearch(LocalSearch):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Debug Search'
-
-    def explore(self, current_patch, current_fitness):
-        debug_patch = self.report['debug_patch']
-        for edit in debug_patch.edits:
-            # move
-            patch = magpie.core.Patch([edit])
-
-            # compare
-            variant = magpie.core.Variant(self.software, patch)
-            run = self.evaluate_variant(variant)
-            accept = best = False
-            if run.status == 'SUCCESS':
-                accept = True
-                if self.dominates(run.fitness, self.report['best_fitness']):
-                    self.report['best_fitness'] = run.fitness
-                    self.report['best_patch'] = patch
-                    best = True
-
-            # hook
-            self.hook_evaluation(patch, run, accept, best)
-
-            # next
-            self.stats['steps'] += 1
-
-        self.report['stop'] = 'debug end'
-        return current_patch, current_fitness
-
-magpie.utils.known_algos.append(DebugSearch)
-
-
-class RandomSearch(LocalSearch):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Random Search'
-
-    def explore(self, current_patch, current_fitness):
-        # move
-        patch = magpie.core.Patch()
-        self.mutate(patch)
-
-        # compare
-        variant = magpie.core.Variant(self.software, patch)
-        run = self.evaluate_variant(variant)
-        best = False
-        if run.status == 'SUCCESS':
-            if self.dominates(run.fitness, self.report['best_fitness']):
-                self.report['best_fitness'] = run.fitness
-                self.report['best_patch'] = patch
-                best = True
-
-        # hook
-        self.hook_evaluation(variant, run, False, best)
-
-        # next
-        self.stats['steps'] += 1
-        return patch, run.fitness
-
-magpie.utils.known_algos.append(RandomSearch)
-
-
-class RandomWalk(LocalSearch):
-    def __init__(self):
-        super().__init__()
-        self.name = 'Random Walk'
-        self.config['accept_fail'] = False
-
-    def setup(self, config):
-        super().setup(config)
-        sec = config['search.ls']
-        self.config['accept_fail'] = sec['accept_fail']
-
-    def explore(self, current_patch, current_fitness):
-        # move
-        patch = copy.deepcopy(current_patch)
-        self.mutate(patch)
-
-        # compare
-        variant = magpie.core.Variant(self.software, patch)
-        run = self.evaluate_variant(variant)
-        accept = self.config['accept_fail']
-        best = False
-        #Is thi not hook logic?
-        if run.status == 'SUCCESS':
-            accept = True
-            if self.dominates(run.fitness, self.report['best_fitness']):
-                self.report['best_fitness'] = run.fitness
-                self.report['best_patch'] = patch
-                best = True
-
-        # accept
-        if accept:
-            current_patch = patch
-            current_fitness = run.fitness
-            self.stats['neighbours'] = 0
-        else:
-            self.stats['neighbours'] += 1
-            self.check_if_trapped()
-
-        # hook
-        self.hook_evaluation(patch, run, accept, best)
-
-        # next
-        self.stats['steps'] += 1
-        return current_patch, current_fitness
-
-magpie.utils.known_algos.append(RandomWalk)
-
+magpie.utils.known_algos['local_search'] = []
 
 class FirstImprovement(LocalSearch):
     def __init__(self):
@@ -248,8 +125,130 @@ class FirstImprovement(LocalSearch):
         self.stats['steps'] += 1
         return current_patch, current_fitness
 
-magpie.utils.known_algos.append(FirstImprovement)
+magpie.utils.known_algos['local_search'].append(FirstImprovement)
 
+class DummySearch(LocalSearch):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Dummy Search'
+
+    def explore(self, current_patch, current_fitness):
+        self.report['stop'] = 'dummy end'
+        return current_patch, current_fitness
+
+magpie.utils.known_algos['local_search'].append(DummySearch)
+
+
+class DebugSearch(LocalSearch):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Debug Search'
+
+    def explore(self, current_patch, current_fitness):
+        debug_patch = self.report['debug_patch']
+        for edit in debug_patch.edits:
+            # move
+            patch = magpie.core.Patch([edit])
+
+            # compare
+            variant = magpie.core.Variant(self.software, patch)
+            run = self.evaluate_variant(variant)
+            accept = best = False
+            if run.status == 'SUCCESS':
+                accept = True
+                if self.dominates(run.fitness, self.report['best_fitness']):
+                    self.report['best_fitness'] = run.fitness
+                    self.report['best_patch'] = patch
+                    best = True
+
+            # hook
+            self.hook_evaluation(patch, run, accept, best)
+
+            # next
+            self.stats['steps'] += 1
+
+        self.report['stop'] = 'debug end'
+        return current_patch, current_fitness
+
+magpie.utils.known_algos['local_search'].append(DebugSearch)
+
+
+class RandomSearch(LocalSearch):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Random Search'
+
+    def explore(self, current_patch, current_fitness):
+        # move
+        patch = magpie.core.Patch()
+        self.mutate(patch)
+
+        # compare
+        variant = magpie.core.Variant(self.software, patch)
+        run = self.evaluate_variant(variant)
+        best = False
+        if run.status == 'SUCCESS':
+            if self.dominates(run.fitness, self.report['best_fitness']):
+                self.report['best_fitness'] = run.fitness
+                self.report['best_patch'] = patch
+                best = True
+
+        # hook
+        self.hook_evaluation(variant, run, False, best)
+
+        # next
+        self.stats['steps'] += 1
+        return patch, run.fitness
+
+magpie.utils.known_algos['local_search'].append(RandomSearch)
+
+
+class RandomWalk(LocalSearch):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Random Walk'
+        self.config['accept_fail'] = False
+
+    def setup(self, config):
+        super().setup(config)
+        sec = config['search.ls']
+        self.config['accept_fail'] = sec['accept_fail']
+
+    def explore(self, current_patch, current_fitness):
+        # move
+        patch = copy.deepcopy(current_patch)
+        self.mutate(patch)
+
+        # compare
+        variant = magpie.core.Variant(self.software, patch)
+        run = self.evaluate_variant(variant)
+        accept = self.config['accept_fail']
+        best = False
+        #Is thi not hook logic?
+        if run.status == 'SUCCESS':
+            accept = True
+            if self.dominates(run.fitness, self.report['best_fitness']):
+                self.report['best_fitness'] = run.fitness
+                self.report['best_patch'] = patch
+                best = True
+
+        # accept
+        if accept:
+            current_patch = patch
+            current_fitness = run.fitness
+            self.stats['neighbours'] = 0
+        else:
+            self.stats['neighbours'] += 1
+            self.check_if_trapped()
+
+        # hook
+        self.hook_evaluation(patch, run, accept, best)
+
+        # next
+        self.stats['steps'] += 1
+        return current_patch, current_fitness
+
+magpie.utils.known_algos['local_search'].append(RandomWalk)
 
 class BestImprovement(LocalSearch):
     def __init__(self):
@@ -307,7 +306,7 @@ class BestImprovement(LocalSearch):
         self.stats['steps'] += 1
         return current_patch, current_fitness
 
-magpie.utils.known_algos.append(BestImprovement)
+magpie.utils.known_algos['local_search'].append(BestImprovement)
 
 
 class WorstImprovement(LocalSearch):
@@ -366,7 +365,7 @@ class WorstImprovement(LocalSearch):
         self.stats['steps'] += 1
         return current_patch, current_fitness
 
-magpie.utils.known_algos.append(WorstImprovement)
+magpie.utils.known_algos['local_search'].append(WorstImprovement)
 
 
 class TabuSearch(BestImprovement):
@@ -431,4 +430,4 @@ class TabuSearch(BestImprovement):
         self.stats['steps'] += 1
         return current_patch, current_fitness
 
-magpie.utils.known_algos.append(TabuSearch)
+magpie.utils.known_algos['local_search'].append(TabuSearch)

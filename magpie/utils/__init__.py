@@ -5,6 +5,7 @@ from .convert import (
     model_from_string,
     protocol_from_string,
     software_from_string,
+    element_from_string
 )
 
 # "final" classes only

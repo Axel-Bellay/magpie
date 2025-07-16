@@ -16,7 +16,6 @@ class XmlModel(AbstractRIDModel):
         }
 
     def setup(self, config, section_name):
-        super().setup(config, section_name)
         config_section = config[section_name]
         if (k := 'internodes') in config_section:
             self.config[k] = set(config_section[k].split())

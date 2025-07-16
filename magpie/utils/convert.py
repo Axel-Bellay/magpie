@@ -7,6 +7,15 @@ from .known import models as known_models
 from .known import protocols as known_protocols
 from .known import software as known_software
 
+#This search function is repeated 5 times across the file.
+#It would be better to have a single one, taking the list it is searching into as an argument.
+
+def element_from_string(s, iterable) :
+    for klass in iterable :
+        if klass.__name__ == s :
+            return klass
+    msg = "Could not find element '{}' in '{}'".format(s, iterable)
+    raise RuntimeError(msg)
 
 def model_from_string(s):
     for klass in known_models:
@@ -54,7 +63,7 @@ def software_from_string(s):
     raise RuntimeError(msg)
 
 def algo_from_string(s):
-    for klass in known_algos:
+    for klass in known_algos[s]:
         if klass.__name__ == s:
             return klass
     msg = f'Unknown algorithm class "{s}"'
