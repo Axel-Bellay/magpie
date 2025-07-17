@@ -17,8 +17,10 @@ def make_config(scenario) :
     return config
 
 def make_protocol(config, search) :
-    protocol = magpie.utils.protocol_from_string(config['search']['protocol'])()
-    protocol.search = magpie.utils.element_from_string(config['search']['algorithm'], magpie.utils.known_algos[search])()
-    protocol.software = magpie.utils.software_from_string(config['software']['software'])(config)
+    protocol = magpie.utils.element_from_string(config['search']['protocol'], magpie.utils.known_protocols)()
+    protocol.search = (
+        magpie.utils.element_from_string(config['search']['algorithm'], magpie.utils.known_algos[search])())
+    protocol.search.software = (
+        magpie.utils.element_from_string(config['software']['software'], magpie.utils.known_software)(config))
 
     return protocol

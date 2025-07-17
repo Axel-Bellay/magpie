@@ -20,7 +20,6 @@ class AbstractConfigModel(magpie.core.AbstractModel):
         }
 
     def setup(self, config, section_name):
-        super().setup(config, section_name)
         for name in tuple({'paramconfig', section_name}):
             config_section = config[name]
             if (k := 'timing') in config_section:

@@ -17,13 +17,6 @@ def element_from_string(s, iterable) :
     msg = "Could not find element '{}' in '{}'".format(s, iterable)
     raise RuntimeError(msg)
 
-def model_from_string(s):
-    for klass in known_models:
-        if klass.__name__ == s:
-            return klass
-    msg = f'Unknown model class "{s}"'
-    raise RuntimeError(msg)
-
 def edit_from_string(s):
     s2 = s.lower().replace('_', '') + 'edit'
     for klass in known_edits:
@@ -48,23 +41,3 @@ def fitness_from_string(s):
     msg = f'Unknown fitness class "{s}Fitness"'
     raise RuntimeError(msg)
 
-def protocol_from_string(s):
-    for klass in known_protocols:
-        if klass.__name__ == s:
-            return klass
-    msg = f'Unknown protocol class "{s}"'
-    raise RuntimeError(msg)
-
-def software_from_string(s):
-    for klass in known_software:
-        if klass.__name__ == s:
-            return klass
-    msg = f'Unknown software class "{s}"'
-    raise RuntimeError(msg)
-
-def algo_from_string(s):
-    for klass in known_algos[s]:
-        if klass.__name__ == s:
-            return klass
-    msg = f'Unknown algorithm class "{s}"'
-    raise RuntimeError(msg)

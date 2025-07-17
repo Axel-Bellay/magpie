@@ -2,9 +2,6 @@ import argparse
 import configparser
 import pathlib
 import sys
-
-from gi.overrides.BlockDev import utils
-
 import magpie
 from magpie.bin.utils import recreate_patch
 
@@ -93,6 +90,7 @@ if __name__ == '__main__':
 
     magpie.core.pre_setup(config)
     magpie.core.setup(config)
-    software = magpie.utils.software_from_string(config['software']['software'])(config)
+    soft_class = magpie.utils.element_from_string(config['software']['software'], magpie.utils.known_software)
+    software = soft_class(config)
 
     run_visualizer(visualizing_function)

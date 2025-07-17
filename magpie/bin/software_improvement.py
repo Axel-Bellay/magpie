@@ -7,7 +7,6 @@ import functools
 import magpie
 
 if __name__ == '__main__':
-    print("Bienvenue dans software_improvement.py")
 
     search_type = sys.argv[1]
     parser = argparse.ArgumentParser(description=f'Magpie {search_type}')
@@ -26,7 +25,7 @@ if __name__ == '__main__':
     # select GP algorithm
     if args.algo is not None:
         algo = magpie.utils.algo_from_string(args.algo)
-        if not magpie.utils.known_algos[search_type].contains(algo) : # Critical point for refactoring
+        if not magpie.utils.known_algos[search_type].contains(algo) :
             msg = f'Invalid genetic programming algorithm "{algo.__name__}"'
             raise RuntimeError(msg)
         config['search']['algorithm'] = args.algo
@@ -36,9 +35,9 @@ if __name__ == '__main__':
 
     # setup protocol
     magpie.core.setup(config)
-    protocol = magpie.utils.protocol_from_string(config['search']['protocol'])()
-    protocol.search = algo()
-    protocol.software = magpie.utils.software_from_string(config['software']['software'])(config)
+    protocol = magpie.utils.element_from_string(config['search']['protocol'], magpie.utils.known_protocols)()
+    protocol.search = algo() #We could inject dependency directly into the constructor
+    protocol.search.software = magpie.utils.element_from_string(config['software']['software'], magpie.utils.known_software)(config)
 
     # run experiments
     protocol.run(config)

@@ -39,17 +39,17 @@ def get_valid_protocol(argv):
 
 if __name__ == '__main__':
     valid_target = get_valid_target(sys.argv)
-    print(valid_target)
     if not valid_target:
-        usage()
-        sys.exit(1)
-
-    if valid_target.__contains__('magpie.scripts') :
-        sys.argv = sys.argv[1:]
-        sys.path.append(str(root.resolve()))
-        runpy.run_module(valid_target, run_name='__main__', alter_sys=True)
-    else :
         prot = get_valid_protocol(sys.argv)
+        if not prot:
+            usage()
+            sys.exit(1)
         print(prot)
         sys.path.append(str(root.resolve()))
         runpy.run_module(prot, run_name='__main__', alter_sys=True)
+    elif valid_target.__contains__('magpie.scripts') :
+        sys.argv = sys.argv[1:]
+        sys.path.append(str(root.resolve()))
+        runpy.run_module(valid_target, run_name='__main__', alter_sys=True)
+
+

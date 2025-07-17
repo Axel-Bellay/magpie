@@ -41,7 +41,7 @@ class Variant:
                     pattern == '*',
                     pattern.startswith('*') and target_file.endswith(pattern[1:]),
             ]):
-                model = magpie.utils.model_from_string(klass)(target_file)
+                model = magpie.utils.element_from_string(klass, magpie.utils.known_models)(target_file)
                 break
         else:
             msg = f'Unknown model for target file "{target_file}"'

@@ -9,12 +9,10 @@ import magpie.utils.known
 class BasicProtocol:
     def __init__(self):
         self.search = None
-        self.software = None
 
     def run(self, config):
-        if self.software is None:
-            msg = 'Software not specified'
-            raise AssertionError(msg)
+        logger = self.search.software.logger
+
         if self.search is None:
             msg = 'Search not specified'
             raise AssertionError(msg)
@@ -29,15 +27,14 @@ class BasicProtocol:
             msg = '==== CONFIG ====\n%s'
             if magpie.settings.color_output:
                 msg = f'\033[1m{msg}\033[0m'
-            self.software.logger.debug(msg, ss.read())
+            logger.debug(msg, ss.read())
 
         # init final result dict
         result = {'stop': None, 'best_patch': None}
 
         # setup software
-        self.search.software = self.software
 
-        logger = self.software.logger
+
 
         # run the algorithm a single time
         logger.debug('') # because CONFIG above is also debug
@@ -59,7 +56,7 @@ class BasicProtocol:
             if handler.__class__.__name__ == 'FileHandler':
                 logger.info('Log file: %s', handler.baseFilename)
         if result['best_fitness'] and result['best_patch'] and result['best_patch'].edits:
-            base_path = pathlib.Path(magpie.settings.log_dir) / self.software.run_label
+            base_path = pathlib.Path(magpie.settings.log_dir) / self.search.software.run_label
             patch_file = f'{base_path}.patch'
             diff_file = f'{base_path}.diff'
             logger.info('Patch file: %s', patch_file)
@@ -98,7 +95,7 @@ class BasicProtocol:
                 f.write(result['diff'])
 
         # cleanup temporary software copies
-        self.software.clean_work_dir()
+        self.search.software.clean_work_dir()
 
     @staticmethod
     def color_diff(diff):

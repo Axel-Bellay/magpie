@@ -265,7 +265,80 @@ self.hook_wramup()
 self.hook.warmup(self)
 ```
 
-This change will definitely make the code a bit more laborious to write, however it will make it a lot clearer and easier to understand.
+This change will definitely make the code a bit more laborious to write, however it will make it a lot 
+clearer and easier to understand.
+
+### Evaluation pipelines attributes in `BasicSoftware`
+
+The `BasicSofwtare` class is responsible for the execution of it's own evaluation pipeline
+
+We know that the pipeline consists of five commands: `init`, `setup`, `compile`, `test` and `run`. Each of those commands have 
+four attributes : 
+ - `cmd` : the command itself
+ - `performed` : a boolean value indicating if the command as been performed yet or not
+ - `timeout` : a time limit for the command's execution
+ - `lengthout` : a length limit for the command's output
+
+Currently, the `BasicAlgorithm` class is reserving one field for each attribute, for each command, for a total of twenty
+fields reserved for the evaluation pipeline. Having this much resembling fields introduces a lot of code redundancy,
+most notably in the setup section of the class initialization :
+
+```python
+        if 'init_cmd' in config['software']:
+            if config['software']['init_cmd'].lower() in ['', 'none']:
+                self.init_cmd = None
+            else:
+                self.init_cmd = config['software']['init_cmd']
+        if 'init_timeout' in config['software']:
+            if config['software']['init_timeout'].lower() in ['', 'none']:
+                self.init_timeout = None
+            else:
+                self.init_timeout = float(config['software']['init_timeout'])
+        if 'init_lengthout' in config['software']:
+            if config['software']['init_lengthout'].lower() in ['', 'none']:
+                self.init_lengthout = None
+            else:
+                self.init_lengthout = int(config['software']['init_lengthout'])
+```
+
+This piece of code is repeated five times, with the only change being the attribute's name. There is two ways to fix 
+this :
+
+ - Having a dict field for each command
+
+```python
+#from
+self.setup_performed = False
+self.setup_cmd = None
+self.setup_timeout = None
+self.setup_lengthout = None
+
+#to
+self.setup = {
+    'performed' : False,
+    'cmd' : None,
+    'timeout' : None,
+    'lengthout' : None
+}
+```
+
+ - Creating a `Command` data class
+
+```python
+class Command :
+
+    def __init__(self): 
+        self.performed = False,
+        self.cmd = None,
+        self.timeout = None,
+        self.lengthout = None
+```
+
+In both cases, these changes would allow us to factorize the init code(and other not mentioned pieces) into a separate
+method to which we would simply pass the right command attribute.
+
+In my opinion this refactor would make the code shorter and clearer(Keep It Simple Stupid), and more scalable.
+In particular, the data class option would make it a lot easier to add a new command in the pipeline.
 
 ### Misc
 
@@ -282,8 +355,6 @@ This change will definitely make the code a bit more laborious to write, however
  - I noticed some occurrences of dead variables in the code, most notably in the `BasicAlgorithm` class(signaled by comments). 
     Variables and dict values are assigned, then re-assigned later without being used once. These make the code 
     more confusing and induce errors.
- - The `evaluate_variant(software, variant)` is duplicated in the `BasicAlgorithm` class and     the `Basic_Software` class.
-    software variants already have a reference to their original software, thus contain all the necessary data to execute this method properly. Rather than Have two instance of this method scatered in two classes, why not just have one, inside the that makes the most sense?
 
 
 ***
