@@ -36,11 +36,11 @@ structure clearer at first glance.
 
 here are the inheritance structure for models and algorithms :
 
-<img src = "./img/Model_inherintance_diagram.drawio.png"/>
+<img src = "./src/img/Model_inherintance_diagram.drawio.png"/>
 
 *figure 1 : class diagram illustrating the inheritance structure for models*
 
-<img src= "./img/Algorithm_class_diagram.drawio.png"/>
+<img src= "./src/img/Algorithm_class_diagram.drawio.png"/>
 
 *figure 2 : class diagram illustrating the inheritance structure for algorithms*
 
@@ -60,7 +60,7 @@ make edits is relevant in the calculation as well.
 
 here is a class diagram showing the dependencies listed above
 
-<img src="./img/Update_Data_Dependencies.drawio.png">
+<img src="./src/img/Update_Data_Dependencies.drawio.png">
 
 *figure 3 : class diagram for dependencies between data classes*
 
@@ -92,7 +92,7 @@ Has an example, here is the typical execution flow for the following command :
     pyhton3 magpie loca_search --scenario examples/minisat/_magpie/scenario_runtime_config1.txt
 ```
 
-<img src="img/bin_sequence_diagram.drawio.png" />
+<img src="src/img/bin_sequence_diagram.drawio.png" />
 
 *figure 4 : sequence diagram illustrating the typical execution flow of magpie(part 1).*
 
@@ -105,6 +105,16 @@ is possible. The file pairs genetic_programming.py and local_search.py, as well 
 revalidate_patch.py, could likely be merged into single files with only minimal code changes. I will discuss this 
 further in the Suggestions section. It is also likely that additional refactoring opportunities remain, as a 
 considerable amount of duplicated code would still be present even after these changes.
+
+for now, let's take a look at the project's global structure and make conjectures concerning the design pattern we would
+like to apply. Here is a complete UML diagram illustrating magpie's global structure, without going into the details of 
+each class's methods :
+
+<img src="./src/img/full_class_diagram.png">
+
+*figure 5 : Complete class diagram of magpie*
+
+
 
 ## Suggestions 
 
@@ -119,7 +129,7 @@ currently, each model folder contains an abstract representation of said model. 
 and could probably be discarded, if we move the setup method in the AbstractModel class. here is the new structure I 
 suggest :
 
-<img src="./img/new_model_structure.png"/>
+<img src="./src/img/new_model_structure.png"/>
 
 The setup method has been moved up and particular classes for each abstract models have been replaced with a general 
 one : AbstractRIDModel(for Abstract Replace Insert Delete Model) that the classes for concrete models can implement. We
