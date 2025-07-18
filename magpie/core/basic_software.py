@@ -5,6 +5,7 @@ import shlex
 import magpie.settings
 
 from .abstract_software import AbstractSoftware
+from .command import Command
 from .errors import ScenarioError
 from .runresult import RunResult
 
@@ -85,110 +86,21 @@ class BasicSoftware(AbstractSoftware):
                 fit = magpie.utils.convert.fitness_from_string(s)(self)
             self.fitness.append(fit)
 
-        # execution-related parameters
-        self.init_performed = False
-        self.init_cmd = None
-        self.init_timeout = None
-        self.setup_performed = False
-        self.setup_cmd = None
-        self.setup_timeout = None
-        self.setup_lengthout = None
-        self.compile_cmd = None
-        self.compile_timeout = None
-        self.compile_lengthout = None
-        self.test_cmd = None
-        self.test_timeout = None
-        self.test_lengthout = None
-        self.run_cmd = None
-        self.run_timeout = None
-        self.run_lengthout = None
+        # new execution-related parameters
+        self.init = Command('init')
+        self.setup = Command('setup')
+        self.compile = Command('compile')
+        self.test = Command('test')
+        self.run = Command('run')
         self.batch_timeout = None
         self.batch_lengthout = None
 
-        # init
-        if 'init_cmd' in config['software']:
-            if config['software']['init_cmd'].lower() in ['', 'none']:
-                self.init_cmd = None
-            else:
-                self.init_cmd = config['software']['init_cmd']
-        if 'init_timeout' in config['software']:
-            if config['software']['init_timeout'].lower() in ['', 'none']:
-                self.init_timeout = None
-            else:
-                self.init_timeout = float(config['software']['init_timeout'])
-        if 'init_lengthout' in config['software']:
-            if config['software']['init_lengthout'].lower() in ['', 'none']:
-                self.init_lengthout = None
-            else:
-                self.init_lengthout = int(config['software']['init_lengthout'])
-
-        # setup
-        if 'setup_cmd' in config['software']:
-            if config['software']['setup_cmd'].lower() in ['', 'none']:
-                self.setup_cmd = None
-            else:
-                self.setup_cmd = config['software']['setup_cmd']
-        if 'setup_timeout' in config['software']:
-            if config['software']['setup_timeout'].lower() in ['', 'none']:
-                self.setup_timeout = None
-            else:
-                self.setup_timeout = float(config['software']['setup_timeout'])
-        if 'setup_lengthout' in config['software']:
-            if config['software']['setup_lengthout'].lower() in ['', 'none']:
-                self.setup_lengthout = None
-            else:
-                self.setup_lengthout = int(config['software']['setup_lengthout'])
-
-        # compile
-        if 'compile_cmd' in config['software']:
-            if config['software']['compile_cmd'].lower() in ['', 'none']:
-                self.compile_cmd = None
-            else:
-                self.compile_cmd = config['software']['compile_cmd']
-        if 'compile_timeout' in config['software']:
-            if config['software']['compile_timeout'].lower() in ['', 'none']:
-                self.compile_timeout = None
-            else:
-                self.compile_timeout = float(config['software']['compile_timeout'])
-        if 'compile_lengthout' in config['software']:
-            if config['software']['compile_lengthout'].lower() in ['', 'none']:
-                self.compile_lengthout = None
-            else:
-                self.compile_lengthout = int(config['software']['compile_lengthout'])
-
-        # test
-        if 'test_cmd' in config['software']:
-            if config['software']['test_cmd'].lower() in ['', 'none']:
-                self.test_cmd = None
-            else:
-                self.test_cmd = config['software']['test_cmd']
-        if 'test_timeout' in config['software']:
-            if config['software']['test_timeout'].lower() in ['', 'none']:
-                self.test_timeout = None
-            else:
-                self.test_timeout = float(config['software']['test_timeout'])
-        if 'test_lengthout' in config['software']:
-            if config['software']['test_lengthout'].lower() in ['', 'none']:
-                self.test_lengthout = None
-            else:
-                self.test_lengthout = int(config['software']['test_lengthout'])
-
-        # run
-        if 'run_cmd' in config['software']:
-            if config['software']['run_cmd'].lower() in ['', 'none']:
-                self.run_cmd = None
-            else:
-                self.run_cmd = config['software']['run_cmd']
-        if 'run_timeout' in config['software']:
-            if config['software']['run_timeout'].lower() in ['', 'none']:
-                self.run_timeout = None
-            else:
-                self.run_timeout = float(config['software']['run_timeout'])
-        if 'run_lengthout' in config['software']:
-            if config['software']['run_lengthout'].lower() in ['', 'none']:
-                self.run_lengthout = None
-            else:
-                self.run_lengthout = int(config['software']['run_lengthout'])
+        # new setup for execution related parameters
+        self.initialize_command(self.init, self.config)
+        self.initialize_command(self.setup, self.config)
+        self.initialize_command(self.compile, self.config)
+        self.initialize_command(self.test, self.config)
+        self.initialize_command(self.run, self.config)
 
         # batch parameters
         self.batch = [''] # default initial batch: single empty instance
@@ -221,14 +133,48 @@ class BasicSoftware(AbstractSoftware):
         self.reset_workdir()
         self.reset_contents()
 
+    def initialize_command(self, command, config):
+        cmd = command.name + '_cmd'
+        if cmd in config['software']:
+            if config['software'][cmd].lower() in ['', 'none']:
+                command.cmd = None
+            else:
+               command.cmd = config['software'][cmd]
+        timeout = command.name + '_timeout'
+        if timeout in config['software']:
+            if config['software'][timeout].lower() in ['', 'none']:
+                command.timeout = None
+            else:
+                command.timeout = float(config['software'][timeout])
+        lengthout = command.name + '_lengthout'
+        if lengthout in config['software']:
+            if config['software'][lengthout].lower() in ['', 'none']:
+                command.lengthout = None
+            else:
+                command.lengthout = int(config['software'][lengthout])
+
+    def setup_and_execute(self, command, variant):
+        cli = self.compute_local_cli(variant, command.name)
+        cmd = command.cmd.strip()
+        if '{PARAMS}' in command.cmd:
+            cmd = cmd.replace('{PARAMS}', cli)
+        else:
+            cmd = f'{cmd} {cli}'
+        timeout = command.timeout or magpie.settings.default_timeout
+        lengthout = command.lengthout or magpie.settings.default_lengthout
+        exec_result = self.exec_cmd(shlex.split(cmd),
+                                    timeout=timeout,
+                                    lengthout=lengthout)
+        return exec_result
+
     def reset_contents(self):
-        if not self.init_performed:
-            self.init_performed = True
-            if self.init_cmd:
+        if not self.init.performed:
+            self.init.performed = True
+            if self.init.cmd:
                 with contextlib.chdir(self.path):
-                    timeout = self.init_timeout or magpie.settings.default_timeout
-                    lengthout = self.init_lengthout or magpie.settings.default_lengthout
-                    exec_result = self.exec_cmd(shlex.split(self.init_cmd),
+                    timeout = self.init.timeout or magpie.settings.default_timeout
+                    lengthout = self.init.lengthout or magpie.settings.default_lengthout
+                    exec_result = self.exec_cmd(shlex.split(self.init.cmd),
                                                 timeout=timeout,
                                                 lengthout=lengthout)
                     run_result = RunResult(None, exec_result.status)
@@ -269,8 +215,8 @@ class BasicSoftware(AbstractSoftware):
             default_variant_fitness = [None for _ in self.fitness]
 
             # one-time setup
-            if not self.setup_performed:
-                self.setup_performed = True
+            if not self.setup.performed:
+                self.setup.performed = True
 
                 # make sure this is the unmodified software
                 for filename in self.target_files:
@@ -279,24 +225,12 @@ class BasicSoftware(AbstractSoftware):
                         raise AssertionError
 
                 # run "[software] setup_cmd" if provided
-                if self.setup_cmd:
-                    # setup
-                    cli = self.compute_local_cli(variant, 'setup')
-                    setup_cmd = self.setup_cmd.strip()
-                    if '{PARAMS}' in self.setup_cmd:
-                        setup_cmd = setup_cmd.replace('{PARAMS}', cli)
-                    else:
-                        setup_cmd = f'{setup_cmd} {cli}'
-                    timeout = self.setup_timeout or magpie.settings.default_timeout
-                    lengthout = self.setup_lengthout or magpie.settings.default_lengthout
-                    exec_result = self.exec_cmd(shlex.split(setup_cmd),
-                                                timeout=timeout,
-                                                lengthout=lengthout)
-                    run_result.status = exec_result.status
-                    run_result.last_exec = exec_result
+                if self.setup.cmd:
+                    run_result.last_exec = self.setup_and_execute(self.setup, variant)
+                    run_result.status = run_result.last_exec.status
                     if run_result.status == 'SUCCESS':
                         for fit in self.fitness:
-                            fit.process_setup_exec(run_result, exec_result)
+                            fit.process_setup_exec(run_result, run_result.last_exec)
                     if run_result.status != 'SUCCESS':
                         run_result.status = f'SETUP_{run_result.status}'
                         run_result.fitness = None
@@ -306,24 +240,13 @@ class BasicSoftware(AbstractSoftware):
                 self.sync_folder(self.path, work_path)
 
             # run "[software] compile_cmd" if provided
-            if self.compile_cmd:
-                cli = self.compute_local_cli(variant, 'compile')
-                compile_cmd = self.compile_cmd.strip()
-                if '{PARAMS}' in self.compile_cmd:
-                    compile_cmd = compile_cmd.replace('{PARAMS}', cli)
-                else:
-                    compile_cmd = f'{compile_cmd} {cli}'
-                timeout = self.compile_timeout or magpie.settings.default_timeout
-                lengthout = self.compile_lengthout or magpie.settings.default_lengthout
-                exec_result = self.exec_cmd(shlex.split(compile_cmd),
-                                            timeout=timeout,
-                                            lengthout=lengthout)
-                run_result.status = exec_result.status
-                run_result.last_exec = exec_result
+            if self.compile.cmd:
+                run_result.last_exec = self.setup_and_execute(self.compile, variant)
+                run_result.status = run_result.last_exec.status
                 if run_result.status == 'SUCCESS':
                     for i, fit in enumerate(self.fitness):
                         run_result.fitness = None
-                        fit.process_compile_exec(run_result, exec_result)
+                        fit.process_compile_exec(run_result, run_result.last_exec)
                         if run_result.fitness is not None:
                             default_variant_fitness[i] = run_result.fitness
                 if run_result.status != 'SUCCESS':
@@ -332,24 +255,13 @@ class BasicSoftware(AbstractSoftware):
                     return run_result
 
             # run "[software] test_cmd" if provided
-            if self.test_cmd:
-                cli = self.compute_local_cli(variant, 'test')
-                test_cmd = self.test_cmd.strip()
-                if '{PARAMS}' in self.test_cmd:
-                    test_cmd = test_cmd.replace('{PARAMS}', cli)
-                else:
-                    test_cmd = f'{test_cmd} {cli}'
-                timeout = self.test_timeout or magpie.settings.default_timeout
-                lengthout = self.test_lengthout or magpie.settings.default_lengthout
-                exec_result = self.exec_cmd(shlex.split(test_cmd),
-                                            timeout=timeout,
-                                            lengthout=lengthout)
-                run_result.status = exec_result.status
-                run_result.last_exec = exec_result
+            if self.test.cmd:
+                run_result.last_exec = self.setup_and_execute(self.test, variant)
+                run_result.status = run_result.last_exec.status
                 if run_result.status == 'SUCCESS':
                     for i, fit in enumerate(self.fitness):
                         run_result.fitness = None
-                        fit.process_test_exec(run_result, exec_result)
+                        fit.process_test_exec(run_result, run_result.last_exec)
                         if run_result.fitness is not None:
                             default_variant_fitness[i] = run_result.fitness
                 if run_result.status == 'SUCCESS':
@@ -360,10 +272,10 @@ class BasicSoftware(AbstractSoftware):
                     return run_result
 
             # run "[software] run_cmd" if provided
-            if self.run_cmd:
+            if self.run.cmd:
                 cli = self.compute_local_cli(variant, 'run')
-                timeout = self.run_timeout or magpie.settings.default_timeout
-                lengthout = self.run_lengthout or magpie.settings.default_lengthout
+                timeout = self.run.timeout or magpie.settings.default_timeout
+                lengthout = self.run.lengthout or magpie.settings.default_lengthout
                 batch_timeout = self.batch_timeout
                 batch_lengthout = self.batch_lengthout
                 insts = [inst for b in self.batch for inst in b]
@@ -371,12 +283,12 @@ class BasicSoftware(AbstractSoftware):
                     variant_fitness = default_variant_fitness[:]
                     if inst in run_result.cache:
                         continue
-                    run_cmd = self.run_cmd.strip()
-                    if '{INST}' in self.run_cmd:
+                    run_cmd = self.run.cmd.strip()
+                    if '{INST}' in self.run.cmd:
                         run_cmd = run_cmd.replace('{INST}', inst)
                     else:
                         run_cmd = f'{run_cmd} {inst}'
-                    if '{PARAMS}' in self.run_cmd:
+                    if '{PARAMS}' in self.run.cmd:
                         run_cmd = run_cmd.replace('{PARAMS}', cli)
                     else:
                         run_cmd = f'{run_cmd} {cli}'

@@ -207,7 +207,7 @@ The *hook* methods in that class are pretty confusing. When starting my study I 
 search algorithm, turns out they are just logging, checking for errors and printing the report datas. I suggest moving them into their own
 separate class and document it to make their purpose more clear, and the `BasicAlgorithm` code easier to understand.
 
-<img src="img/hook_class.drawio.png"/>
+<img src="src/img/hook_class.drawio.png"/>
 
 The main problem with this refactor is that some of the currently implemented search algorithm override the hook methods present in `BasicSoftware`. A simple solution to this, however, is to create an inner class that would inherit the basic `Hook` class(we could even rename it `BasicHook`), and give the search algorithm an object of this class instead. As an example, here is what the code of `ValidSearch` would look like :
 
