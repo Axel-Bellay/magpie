@@ -28,6 +28,8 @@ class SoftwareImrovementProtocol(AbstractProtocol):
         self.report['best_patch'] = None
         self.report['stop'] = None
 
+        self.stats = {}
+
         self.result = {'stop': None, 'best_patch': None}
 
     def run(self, config):
@@ -65,14 +67,24 @@ class SoftwareImrovementProtocol(AbstractProtocol):
         self.end_protocol()
         self.log_result()
 
-
-
-    # Runs the evaluation pipeline(evaluate_variant method) on an empty software variant, as many times as defined in
-    # config['warmup'], to give the search algorithm initial best fitness values to shoot for(initial best patch
-    # will be an empty one). The evaluation run defining the initial best fitness will be choosen depending
-    # on config['warmup_strategy']
     def warmup(self):
-        #TODO : Documentation
+        """
+            Run a software variant with an empty patch through the execution pipeline in the self.software attribute,
+            as many times as defined in self.config['warmup'], and collect their fitness value so one of them
+            can be chosen as an initial value for self.report['best_fitness'].
+
+            The value is chosen among the collected results following the value of self.config['warmup_strategy'],
+            with different possibilities :
+                - 'last' : the result of the last execution is picked
+                - 'min/max' : the minimum/maximum fitness value among the results is picked
+                - 'max' : the maximum fitness value among the results is picked
+                - 'mean' : calculates the average fitness value of the results
+
+            self.report['best_fitness'] will be updated with the value picked. self.report['best_patch'] will be assigned
+            an empty Patch object if the best patch has not been set beforehand. If it has, the execution pipeline is
+            ran one last time on it, it's fitness value is compared to the picked value and the 'best_patch' and
+            'best_fitness' fields are updated accordingly in self.report.
+        """
         patch = Patch([])
         variant = Variant(self, patch)
         if self.report['initial_patch'] is None:
@@ -102,7 +114,7 @@ class SoftwareImrovementProtocol(AbstractProtocol):
             msg = 'Unknown warmup strategy'
             raise ValueError(msg)
         run.fitness = current_fitness
-        self.cache_set(variant.diff, run)
+        self.software.cache_set(variant.diff, run)
         self.log_evaluation(variant, run, 'BEST', force_success=True)
         self.report['reference_fitness'] = current_fitness
         if self.report['best_patch'] is None:
@@ -170,7 +182,9 @@ class SoftwareImrovementProtocol(AbstractProtocol):
         self.software.logger.info(msg)
 
     def log_result(self):
-        # print the report
+        """
+
+        """
         self.software.logger.info('')
         msg = '==== REPORT ===='
         if magpie.settings.color_output:
@@ -220,14 +234,50 @@ class SoftwareImrovementProtocol(AbstractProtocol):
                 f.write(self.result['diff'])
 
         # cleanup temporary software copies
-        self.search.software.clean_work_dir()
+        self.software.clean_work_dir()
 
     def aux_log_counter(self):
         return str(self.stats['steps'] + 1)
 
     #Logs a patch and it's evaluation's run data(status, fitness, number of the run, etc.) into a 'data' dict and returns it
     def aux_log_data(self, patch, run, counter, baseline, accept, best):
-        #TODO : documentation.
+        """
+            Returns a dictionary containing the data of one step in a search algorithm.
+
+            The data fields contain(but are not limited to) :
+
+             - 'counter' The step count since the start of the search algorithm.
+             - 'status' The status of the evaluation run : 'SUCCESS' or 'FAILURE {error msg}'.
+             - 'best' : '*' if the run's fitness result is the best found so far, '+' if it is an acceptable result,
+                '' otherwise.
+             - 'patch' the patch produced during the step
+             - 'diff' the difference between the original software and the variant created during the step
+             - 'size' is the size of the patch, in terms of edits
+             - 'cached' indicates if the evaluation data comes from a previously cached evaluation run on a variant with
+                the same diff value. It can be partially cached, which means the diff was the same but the evaluation yielded
+                different results , completely cached which mean no new results were found, or not cached at all which
+                means the diff was unique on this run of the algorithm.
+
+            Parameters
+            ----------
+            patch : magpie.core.Patch
+                The patch(list of edits) produced during the step
+            run : magpie.core.RunResult
+                The evaluation run's results(status, fitness, cached)
+            counter : int
+                The step count since the start of the search algorithm.
+            baseline : Any
+                The baseline fitness value used to calculate the 'ratio' field
+            accept : bool
+                Whether the evaluation run yields an acceptable fitness result.
+            best : bool
+                Whether the evaluation run yields the best fitness result so far.
+
+            Returns
+            -------
+            data : dict
+                the dictionary containing the aforementioned data correctly formatted, and .
+            """
         data = {}
         data['counter'] = counter or self.aux_log_counter()
         data['status'] = run.status
