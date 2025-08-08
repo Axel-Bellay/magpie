@@ -11,7 +11,8 @@ from .errors import ScenarioError
 from .patch import Patch
 from .variant import Variant
 
-
+#This class is not related to the search algorithm itself, more to the general process of automatic software improvement
+#The inheritance
 class BasicAlgorithm(AbstractAlgorithm):
     def __init__(self):
         super().__init__()
@@ -26,6 +27,7 @@ class BasicAlgorithm(AbstractAlgorithm):
         self.stats['cache_misses'] = 0
         self.cache_reset()
 
+    #some of it should go in algortihm, some in protocol, some in software
     def setup(self, config):
         sec = config['search']
         self.config['warmup'] = int(sec['warmup'])
@@ -85,20 +87,21 @@ class BasicAlgorithm(AbstractAlgorithm):
         self.config['batch_bins'] = bins
         self.config['batch_sample_size'] = int(sec['batch_sample_size'])
 
+    #should go in protocol
     def hook_reset_batch(self):
         # resample instances
-        s = self.config['batch_sample_size']
+        size= self.config['batch_sample_size']
         # TODO: sample with replacement, with refill
-        if sum(len(b) for b in self.config['batch_bins']) <= s:
+        if sum(len(b) for b in self.config['batch_bins']) <= size:
             batch = list(self.config['batch_bins'])
         else:
             batch = [[] for b in self.config['batch_bins']]
-            while s > 0:
+            while size> 0:
                 for i, b in enumerate(batch):
                     if len(b) < len(self.config['batch_bins'][i]):
                         b.append(self.config['batch_bins'][i][len(b)])
-                        s -= 1
-                    if s == 0:
+                        size-= 1
+                    if size== 0:
                         break
         batch = [b for b in batch if b] # discards empty bins
         self.software.batch = batch if any(batch) else [['']] # single empty instance when no batch
@@ -111,6 +114,7 @@ class BasicAlgorithm(AbstractAlgorithm):
         run = self.evaluate_variant(variant)
         self.report['reference_fitness'] = run.fitness
         self.report['best_fitness'] = run.fitness
+        #This will be accessed outside of warmup.
         self.hook_warmup_evaluation('REF', patch, run)
         if run.status != 'SUCCESS':
             msg = 'Reference software evaluation failed'
@@ -126,6 +130,7 @@ class BasicAlgorithm(AbstractAlgorithm):
             else:
                 self.report['best_patch'] = patch
 
+    #should go in protocol
     def hook_warmup(self):
         self.hook_reset_batch()
         self.stats['wallclock_start'] = self.stats['wallclock_warmup'] = time.time()
@@ -134,16 +139,19 @@ class BasicAlgorithm(AbstractAlgorithm):
             msg = f'\033[1m{msg}\033[0m'
         self.software.logger.info(msg)
 
+    #should go in protocol
     def hook_warmup_evaluation(self, counter, patch, run):
         data = self.aux_log_data(patch, run, counter, None, False, False)
         self.aux_log_print(data, run, False, False)
         if run.status != 'SUCCESS':
             self.software.diagnose_error(run)
 
+    #should go in protocol
     def hook_batch_evaluation(self, counter, patch, run, best=False):
         data = self.aux_log_data(patch, run, counter, self.report['reference_fitness'], False, best)
         self.aux_log_print(data, run, False, best)
 
+    #should go in protocol
     def hook_start(self):
         if not self.config['possible_edits']:
             msg = 'Possible_edits list is empty'
@@ -156,13 +164,16 @@ class BasicAlgorithm(AbstractAlgorithm):
             msg = f'\033[1m{msg}\033[0m'
         self.software.logger.info(msg)
 
+    #should be deleted
     def hook_main_loop(self):
         pass
 
+    #almost the same as hook_batch_evaluation, one of them should go.
     def hook_evaluation(self, variant, run, accept=False, best=False):
         data = self.aux_log_data(variant.patch, run, self.aux_log_counter(), self.report['reference_fitness'], accept, best)
         self.aux_log_print(data, run, accept, best)
 
+    # all aux methods should go in protocol.
     def aux_log_counter(self):
         return str(self.stats['steps']+1)
 
@@ -225,6 +236,7 @@ class BasicAlgorithm(AbstractAlgorithm):
             return f'\033[31m{msg}\033[0m'
         return msg
 
+    #should be in protocol
     def hook_end(self):
         self.stats['wallclock_end'] = time.time()
         self.stats['wallclock_total'] = self.stats['wallclock_end'] - self.stats['wallclock_start']
@@ -236,6 +248,11 @@ class BasicAlgorithm(AbstractAlgorithm):
             msg = f'\033[1m{msg}\033[0m'
         self.software.logger.info(msg)
 
+    #should go in software and be called by protocol.
+    #Runs the evaluation pipeline(evaluate_variant method) on an empty software variant, as many times as defined in
+    #config['warmup'], to give the search algorithm initial best fitness values to shoo for(initial best patch
+    # will be an empty one). The evaluation run defining the initial best fitness will be choosen depending
+    #on config['warmup_strategy']
     def warmup(self):
         patch = Patch([])
         variant = Variant(self.software, patch)
@@ -282,6 +299,9 @@ class BasicAlgorithm(AbstractAlgorithm):
                 self.report['best_patch'] = patch
                 self.report['best_fitness'] = current_fitness
 
+    #this should go in software and be called by protocol.
+    #performs the software evaluation pipeline in the BasicSoftware class,
+    #puts run results data in cache and returns it
     def evaluate_variant(self, variant, force=False):
         cached_run = None
         if self.config['cache_maxsize'] > 0 and not force:
@@ -292,6 +312,9 @@ class BasicAlgorithm(AbstractAlgorithm):
         self.stats['budget'] += getattr(run, 'budget', 0) or 0
         return run
 
+    #Regular cache methods for run results cache
+    #Variant diffs(their differences with the original software) are keys
+    #The values are evaluation pipeline's run results for those variants
     def cache_get(self, diff):
         try:
             run = self.cache[diff]

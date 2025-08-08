@@ -32,10 +32,6 @@ class BasicProtocol:
         # init final result dict
         result = {'stop': None, 'best_patch': None}
 
-        # setup software
-
-
-
         # run the algorithm a single time
         logger.debug('') # because CONFIG above is also debug
         msg = '==== SEARCH: %s ===='

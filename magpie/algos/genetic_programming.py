@@ -50,6 +50,7 @@ class GeneticProgramming(magpie.core.BasicAlgorithm):
             self.hook_warmup()
 
             # initial grow first to avoid wasting warmup
+            # should be in setup
             offsprings = []
             tries = magpie.settings.edit_retries
             expected = self.config['pop_size']
@@ -76,6 +77,7 @@ class GeneticProgramming(magpie.core.BasicAlgorithm):
             self.hook_start()
 
             # initial pop
+            #this could be in hook_start
             pop = {}
             local_best_fitness = None
             for sol in offsprings:
@@ -96,7 +98,7 @@ class GeneticProgramming(magpie.core.BasicAlgorithm):
 
             # main loop
             while not self.stopping_condition():
-                self.stats['gen'] += 1
+                self.stats['gen'] += 1  #This could be in hook_main_loop
                 self.hook_main_loop()
                 offsprings = []
                 parents = self.select(pop)

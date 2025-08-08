@@ -3,16 +3,20 @@ import pathlib
 import shlex
 
 import magpie.settings
+from magpie.core import Patch, Variant
 
-from .abstract_software import AbstractSoftware
-from .command import Command
-from .errors import ScenarioError
-from .runresult import RunResult
+from ..abstract_software import AbstractSoftware
+from ..command import Command
+from ..errors import ScenarioError
+from ..runresult import RunResult
 
 
-class BasicSoftware(AbstractSoftware):
+
+class ExperimentalSoftware(AbstractSoftware):
+
     def __init__(self, config):
         self.config = config
+        self.protocol = None
 
         # AbstractSoftware *requires* a path, a list of target files, and a list of possible edits
         if not (val := config['software']['path']):
@@ -28,7 +32,7 @@ class BasicSoftware(AbstractSoftware):
         self.model_rules = []
         try:
             for rule in config['software']['model_rules'].split('\n'):
-                if rule: # discard potential initial empty line
+                if rule:  # discard potential initial empty line
                     k, v = rule.split(':')
                     self.model_rules.append((k.strip(), v.strip()))
         except ValueError as e:
@@ -39,10 +43,10 @@ class BasicSoftware(AbstractSoftware):
         self.model_config = []
         try:
             for rule in config['software']['model_config'].split('\n'):
-                if rule: # discard potential initial empty line
+                if rule:  # discard potential initial empty line
                     k, v = rule.split(':')
                     v = v.strip()
-                    if v[0]+v[-1] != '[]':
+                    if v[0] + v[-1] != '[]':
                         msg = f'Badly formated section name: "{rule}"'
                         raise ScenarioError(msg)
                     self.model_config.append((k.strip(), v[1:-1]))
@@ -102,18 +106,19 @@ class BasicSoftware(AbstractSoftware):
         self.initialize_command(self.test, self.config)
         self.initialize_command(self.run, self.config)
 
-        #batch parameters
-        #I'm having a hard time understanding the batch parameters
-        #Given how it is used here and in scenarios(minisat example), it seems to represent a
-        #batch of data files on which to test a software variant
-        self.batch = [''] # default initial batch: single empty instance
+        # batch parameters
+        # I'm having a hard time understanding the batch parameters
+        # Given how it is used here and in scenarios(minisat example), it seems to represent a
+        # batch of data files on which to test a software variant
+        self.batch = ['']  # default initial batch: single empty instance
         self.batch_fitness_strategy = config['software']['batch_fitness_strategy']
         known_strategies = ['sum', 'average', 'median']
         if self.batch_fitness_strategy not in known_strategies:
             tmp = '/'.join(known_strategies)
             msg = f'Invalid config file: "[software] batch_fitness_strategy" key must be {tmp}'
             raise ScenarioError(msg)
-        self.batch_bin_fitness_strategy = config['software']['batch_fitness_strategy'] # no need to re-assign the variable
+        self.batch_bin_fitness_strategy = config['software'][
+            'batch_fitness_strategy']  # no need to re-assign the variable
         known_strategies = ['aggregate', 'sum', 'average', 'median', 'q10', 'q25', 'q75', 'q90']
         if self.batch_fitness_strategy not in known_strategies:
             tmp = '/'.join(known_strategies)
@@ -142,7 +147,7 @@ class BasicSoftware(AbstractSoftware):
             if config['software'][cmd].lower() in ['', 'none']:
                 command.cmd = None
             else:
-               command.cmd = config['software'][cmd]
+                command.cmd = config['software'][cmd]
         timeout = command.name + '_timeout'
         if timeout in config['software']:
             if config['software'][timeout].lower() in ['', 'none']:
@@ -350,12 +355,12 @@ class BasicSoftware(AbstractSoftware):
                 bin_fitness.append(fitness)
             multi = len(bin_fitness[0]) > 1
             if self.batch_bin_fitness_strategy == 'aggregate':
-                fit_per_batch.extend(bin_fitness) # ???
+                fit_per_batch.extend(bin_fitness)  # ???
             else:
                 acc = []
                 tmp = [list(a) for a in zip(*bin_fitness)] if multi else bin_fitness
-                for a in tmp: # a_k = fitness values per instance for fitness k
-                    if len(a) == 1: # single instance
+                for a in tmp:  # a_k = fitness values per instance for fitness k
+                    if len(a) == 1:  # single instance
                         v = a[0]
                         precision = len(str(float(v)))
                     else:
@@ -363,44 +368,44 @@ class BasicSoftware(AbstractSoftware):
                         if self.batch_bin_fitness_strategy == 'sum':
                             v = sum(a)
                         elif self.batch_bin_fitness_strategy == 'average':
-                            v = sum(a)/len(a)
+                            v = sum(a) / len(a)
                             precision += 1
                         elif self.batch_bin_fitness_strategy == 'median':
                             if len(a) % 2 == 0:
-                                v = sorted(a)[len(a)//2]
+                                v = sorted(a)[len(a) // 2]
                             else:
-                                v = sum(sorted(a)[len(a)//2:len(a)//2+2])/2
+                                v = sum(sorted(a)[len(a) // 2:len(a) // 2 + 2]) / 2
                                 precision += 1
                         elif self.batch_bin_fitness_strategy == 'q10':
                             if len(a) % 10 == 0:
-                                v = sorted(a)[len(a)//10]
+                                v = sorted(a)[len(a) // 10]
                             else:
-                                v = sum(sorted(a)[len(a)//10:len(a)//10+2])/2
+                                v = sum(sorted(a)[len(a) // 10:len(a) // 10 + 2]) / 2
                                 precision += 1
                         elif self.batch_bin_fitness_strategy == 'q25':
                             if len(a) % 4 == 0:
-                                v = sorted(a)[len(a)//4]
+                                v = sorted(a)[len(a) // 4]
                             else:
-                                v = sum(sorted(a)[len(a)//10:len(a)//10+2])/2
+                                v = sum(sorted(a)[len(a) // 10:len(a) // 10 + 2]) / 2
                                 precision += 1
                         elif self.batch_bin_fitness_strategy == 'q75':
                             if len(a) % 4 == 0:
-                                v = sorted(a)[3*len(a)//4]
+                                v = sorted(a)[3 * len(a) // 4]
                             else:
-                                v = sum(sorted(a)[3*len(a)//4:3*len(a)//4+2])/2
+                                v = sum(sorted(a)[3 * len(a) // 4:3 * len(a) // 4 + 2]) / 2
                                 precision += 1
                         elif self.batch_bin_fitness_strategy == 'q90':
                             if len(a) % 10 == 0:
-                                v = sorted(a)[len(a)//10]
+                                v = sorted(a)[len(a) // 10]
                             else:
-                                v = sum(sorted(a)[9*len(a)//10:9*len(a)//10+2])/2
+                                v = sum(sorted(a)[9 * len(a) // 10:9 * len(a) // 10 + 2]) / 2
                                 precision += 1
                     acc.append(round(v, precision))
                 fit_per_batch.append(acc)
         acc = []
         tmp = [list(a) for a in zip(*fit_per_batch)]
-        for a in tmp: # a_k = fitness values per bin for fitness k
-            if len(a) == 1: # single bin
+        for a in tmp:  # a_k = fitness values per bin for fitness k
+            if len(a) == 1:  # single bin
                 v = a[0]
                 precision = len(str(float(v)))
             else:
@@ -408,23 +413,23 @@ class BasicSoftware(AbstractSoftware):
                 if self.batch_fitness_strategy == 'sum':
                     v = sum(a)
                 elif self.batch_fitness_strategy == 'average':
-                    v = sum(a)/len(a)
+                    v = sum(a) / len(a)
                     precision += 1
                 elif self.batch_fitness_strategy == 'median':
                     if len(a) % 2 == 0:
-                        v = sorted(a)[len(a)//2]
+                        v = sorted(a)[len(a) // 2]
                     else:
-                        v = sum(sorted(a)[len(a)//2:len(a)//2+2])/2
+                        v = sum(sorted(a)[len(a) // 2:len(a) // 2 + 2]) / 2
                         precision += 1
             acc.append(round(v, precision))
         run_result.fitness = acc
 
     def diagnose_error(self, run):
-        self.logger.info('!*'*40)
+        self.logger.info('!*' * 40)
         self.logger.info('Unable to run and evaluate the target software.')
         self.logger.info('Self-diagnostic:')
         self.self_diagnostic(run)
-        self.logger.info('!*'*40)
+        self.logger.info('!*' * 40)
         if run.last_exec is not None:
             self.logger.info('CWD: %s', pathlib.Path(self.work_dir) / self.basename)
             self.logger.info('CMD: %s', run.last_exec.cmd)
@@ -444,7 +449,7 @@ class BasicSoftware(AbstractSoftware):
                 self.logger.debug('STDERR:\n%s', s)
             except UnicodeDecodeError:
                 self.logger.debug('STDERR: (failed to decode to: %s)\n%s', encoding, run.last_exec.stderr)
-            self.logger.info('!*'*40)
+            self.logger.info('!*' * 40)
 
     def self_diagnostic(self, run):
         for step in ['init', 'setup', 'compile', 'test', 'run']:
@@ -472,4 +477,39 @@ class BasicSoftware(AbstractSoftware):
             self.logger.info('Batch execution of "run_cmd" generated too much output')
             self.logger.info('--> consider increasing "batch_lengthout"')
 
-magpie.utils.known_software.append(BasicSoftware)
+    # Regular cache methods for run results cache
+    # Variant diffs(their differences with the original software) are keys
+    # The values are evaluation pipeline's run results for those variants
+    def cache_get(self, diff):
+        try:
+            run = self.cache[diff]
+        except KeyError:
+            self.stats['cache_misses'] += 1
+            return None
+        else:
+            self.stats['cache_hits'] += 1
+            if self.config['cache_maxsize'] > 0:
+                self.cache_hits[diff] += 1
+            run.cached = True
+            run.updated = False
+            return run
+
+    def cache_set(self, diff, run):
+        msize = self.config['cache_maxsize']
+        if 0 < msize < len(self.cache_hits):
+            keep = self.config['cache_keep']
+            hits = sorted(self.cache.keys(), key=lambda k: 999 if len(k) == 0 else self.cache_hits[k])
+            for k in hits[:int(msize * (1 - keep))]:
+                del self.cache[k]
+            self.cache_hits = dict.fromkeys(self.cache, 0)
+        if diff not in self.cache:
+            self.cache_hits[diff] = 0
+        self.cache[diff] = run
+
+    def cache_copy(self, algo):
+        self.cache = algo.cache
+        self.cache_hits = algo.cache_hits
+
+    def cache_reset(self):
+        self.cache = {}
+        self.cache_hits = {}

@@ -10,11 +10,7 @@ class AbstractAlgorithm(abc.ABC):
         self.software = None
         self.config = {}
         self.config['possible_edits'] = []
-        self.stop = {}
-        self.stop['wall'] = None # seconds
-        self.stop['steps'] = None
-        self.stop['budget'] = None
-        self.stop['fitness'] = None
+        self.stop = {'wall': None, 'steps': None, 'budget': None, 'fitness': None}
         self.reset()
 
     def reset(self):
@@ -66,9 +62,16 @@ class AbstractAlgorithm(abc.ABC):
     def dominates_or_equal(self, fit1, fit2):
         return self.dominates(fit1, fit2) or fit1 == fit2
 
+    #check for all different stoping conditons :
+    # - Have we exceeded the number of steps?
+    # - Have we exceeded the time limit?
+    # - Have we reached the best possible fitness?
+    #returns true if one of them is true
+    #else, returns false
     def stopping_condition(self):
         if self.report['stop'] is not None:
             return True
+        #haven't found the attribute referenced anywhere else so it's use is unclear to me
         if self.stop['budget'] is not None:
             if self.stats['budget'] >= self.stop['budget']:
                 self.report['stop'] = 'budget'

@@ -87,7 +87,6 @@ class FirstImprovement(LocalSearch):
 
     def explore(self, current_patch, current_fitness):
         # move
-        #ew...
         while True:
             patch = copy.deepcopy(current_patch)
             self.mutate(patch)

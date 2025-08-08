@@ -1,6 +1,5 @@
 import abc
 
-
 class AbstractFitness(abc.ABC):
     def __init__(self, software):
         self.software = software
